@@ -45,5 +45,21 @@ class DatabaseHelper {
       whereArgs: [timestamp],
     );
   }
+  Future<void> updateCoordinate(String timestamp, String newLat, String newLong) async {
+    final db = await database;
+    await db.update(
+      'coordinates',
+      {'latitude': newLat, 'longitude': newLong},
+      where: 'timestamp = ?',
+      whereArgs: [timestamp],
+    );
+  }
+  Future<List<Map<String, dynamic>>> getCoordinates() async {
+    final db = await database;
+    return await db.query('coordinates');
+  }
 
 }
+
+
+

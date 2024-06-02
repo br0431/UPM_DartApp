@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rv_ad_mad/screens/map_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/second_screen.dart';
 import 'screens/third_screen.dart';
@@ -31,6 +32,7 @@ class _MainScreenState extends State<MainScreen> {
     SplashScreen(),
     SecondScreen(),
     ThirdScreen(),
+    MapScreen(),
   ];
   void _onItemTapped(int index) {
     setState(() {
@@ -56,6 +58,10 @@ class _MainScreenState extends State<MainScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.notifications),
             label: 'Notifications',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.map),
+            label: 'Map',
           ),
         ],
         currentIndex: _selectedIndex,
