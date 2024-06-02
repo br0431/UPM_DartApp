@@ -1,0 +1,49 @@
+import 'dart:async';
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
+import 'package:geolocator/geolocator.dart';
+class DatabaseHelper {
+  DatabaseHelper._privateConstructor(); // Private constructor for the singleton
+  static final DatabaseHelper instance = DatabaseHelper._privateConstructor(); // Singleton instance
+  static Database? _database;
+  Future<Database> get database async {
+    if (_database != null) return _database!;
+    _database = await initDB();
+    return _database!;
+  }
+  initDB() async {
+    final path = await getDatabasesPath();
+    return await openDatabase(
+      join(path, 'coordinate_database.db'),
+      onCreate: (db, version) async {
+        await db.execute('''
+ CREATE TABLE coordinates(
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ timestamp TEXT,
+ latitude REAL,
+ longitude REAL
+ )
+ ''');
+      },
+      version: 1,
+    );
+  }
+
+  Future<void> insertCoordinate(Position position) async {
+    final db = await database;
+    await db.insert('coordinates', {
+      'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+      'latitude': position.latitude,
+      'longitude': position.longitude
+    });
+  }
+  Future<void> deleteCoordinate(String timestamp) async {
+    final db = await database;
+    await db.delete(
+      'coordinates',
+      where: 'timestamp = ?',
+      whereArgs: [timestamp],
+    );
+  }
+
+}
