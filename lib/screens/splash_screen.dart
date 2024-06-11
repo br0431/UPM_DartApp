@@ -7,23 +7,26 @@ import 'dart:io';
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:path_provider/path_provider.dart';
+
 class SplashScreen extends StatefulWidget {
   @override
   _SplashScreenState createState() => _SplashScreenState();
 }
+
 class _SplashScreenState extends State<SplashScreen> {
   StreamSubscription<Position>? _positionStreamSubscription;
   DatabaseHelper db = DatabaseHelper.instance;
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('HelloWorldFt for MAD'),
+        backgroundColor: Colors.black, // Fondo oscuro
+        centerTitle: true, // Centrar el título
+        title: Text('Home', style: TextStyle(color: Colors.deepOrange)),
         actions: <Widget>[
           IconButton(
-            icon: Icon(Icons.settings),
+            icon: Icon(Icons.settings, color: Colors.deepOrange),
             onPressed: () {
               Navigator.push(
                 context,
@@ -98,39 +101,9 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> writePositionToFile(Position position) async {
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/gps_coordinates.csv');
-    String timestamp = DateTime
-        .now()
-        .millisecondsSinceEpoch
-        .toString();
+    String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
     await file.writeAsString(
         '${timestamp};${position.latitude};${position.longitude}\n',
         mode: FileMode.append);
   }
 }
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('HelloWorldFt for MAD'),
-        actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.settings),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => SettingsScreen()),
-              );
-            },
-          ),
-        ],
-      ),
-      body: Center(
-        child: Text('Welcome to the Home Screen!'),
-      ),
-    );
-  }
-
-
-
-
-

@@ -33,7 +33,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Settings"),
+        backgroundColor: Colors.black,
+        centerTitle: true,
+        title: Text(
+          "Settings",
+          style: TextStyle(color: Colors.deepOrange),
+        ),
+        iconTheme: IconThemeData(color: Colors.deepOrange),
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _fetchAllPreferences(),
@@ -42,22 +48,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
             if (snapshot.hasError) {
               return Center(child: Text("Error: ${snapshot.error}"));
             }
-            return ListView(
-              children: snapshot.data!.entries.map((entry) {
-                return ListTile(
-                  title: Text("${entry.key}"),
-                  subtitle: TextField(
-                    controller: controllers[entry.key],
-                    decoration: InputDecoration(hintText: "Enter ${entry.key}"),
-                    onSubmitted: (value) {
-                      _updatePreference(entry.key, value);
-                    },
+            return Stack(
+              children: [
+                ListView(
+                  children: snapshot.data!.entries.map((entry) {
+                    return ListTile(
+                      title: Text("${entry.key}"),
+                      subtitle: TextField(
+                        controller: controllers[entry.key],
+                        decoration: InputDecoration(hintText: "Enter ${entry.key}"),
+                        onSubmitted: (value) {
+                          _updatePreference(entry.key, value);
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Próximamente!!',
+                        style: TextStyle(color: Colors.white60, fontSize: 24),
+                      ),
+                      SizedBox(height: 10), // Espacio entre el texto y el icono
+                      Icon(
+                        Icons.access_time,
+                        color: Colors.white,
+                        size: 36,
+                      ),
+                    ],
                   ),
-                );
-              }).toList(),
+                ),
+              ],
             );
           } else {
-            return Center(child: CircularProgressIndicator());
+            return Center(
+              child: CircularProgressIndicator(),
+            );
           }
         },
       ),
@@ -66,11 +95,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _showLogoutConfirmationDialog();
         },
         child: Icon(Icons.logout),
+        backgroundColor: Colors.deepOrange,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
     );
   }
 
-  // Función para mostrar el diálogo de confirmación de logout
   Future<void> _showLogoutConfirmationDialog() async {
     return showDialog<void>(
       context: context,
@@ -89,13 +121,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextButton(
               child: Text('Cancel'),
               onPressed: () {
-                Navigator.of(context).pop(); // Cierra el diálogo
+                Navigator.of(context).pop();
               },
             ),
             TextButton(
               child: Text('Logout'),
-              onPressed: () {
-                _signOut(); // Realiza el logout
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _signOut();
               },
             ),
           ],
@@ -104,13 +137,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // Función para hacer logout
   Future<void> _signOut() async {
-    await FirebaseAuth.instance.signOut(); // Hace logout
-    // Redirige a la pantalla de login
-    Navigator.pushReplacement(
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => LoginScreen()),
+          (Route<dynamic> route) => false,
     );
   }
 }
