@@ -6,7 +6,7 @@
     <application
         android:label="rv_ad_mad"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/mad_icon"
         tools:overrideLibrary="com.google.firebase.auth">
 
 

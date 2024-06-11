@@ -66,8 +66,8 @@ class _LoginScreenState extends State<LoginScreen> {
         primaryColor: Colors.blueGrey,
         scaffoldBackgroundColor: Colors.black,
         textTheme: TextTheme(
-          bodyText1: TextStyle(color: Colors.white),
-          bodyText2: TextStyle(color: Colors.white),
+          bodyLarge: TextStyle(color: Colors.white),
+          bodyMedium: TextStyle(color: Colors.white),
         ),
       ),
       home: Scaffold(

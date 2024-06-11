@@ -64,7 +64,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Text(
-                '${weatherData['list'][0]['name']}',
+                'Weather in Spain right now',
                 style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 8.0),
@@ -78,7 +78,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
               ),
               SizedBox(height: 8.0),
               Text(
-                'Country: ${weatherData['list'][0]['sys']['country']}',
+                'Country: Spain}',
                 style: TextStyle(fontSize: 18.0),
               ),
               SizedBox(height: 8.0),
