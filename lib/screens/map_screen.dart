@@ -1,8 +1,12 @@
+// /lib/screens/map_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '/db/database_helper.dart';
-import 'weather_screen.dart'; // Importa la pantalla de WeatherScreen
+import 'weather_screen.dart';
+import 'overpass_service.dart';
+
+
 
 class MapScreen extends StatefulWidget {
   @override
@@ -13,6 +17,7 @@ class _MapScreenState extends State<MapScreen> {
   List<Marker> markers = [];
   List<LatLng> routeCoordinates = [];
   List<LatLng> markerCoordinates = [];
+  final OverpassService overpassService = OverpassService();
 
   @override
   void initState() {
@@ -21,7 +26,6 @@ class _MapScreenState extends State<MapScreen> {
     loadRouteCoordinates();
   }
 
-  // Function to load list of markers from database
   Future<void> loadMarkers() async {
     final dbMarkers = await DatabaseHelper.instance.getCoordinates();
 
@@ -74,16 +78,39 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
+  Future<void> searchSportsFacilities() async {
+    final sportsFacilities = await overpassService.getSportsFacilities(
+      40.40886242536441, // Centra la búsqueda en el centro del mapa
+      -3.5250663094863905,
+      5000, // Radio en metros
+    );
+
+    setState(() {
+      markers.addAll(sportsFacilities.map((place) {
+        return Marker(
+          point: place.location,
+          width: 80,
+          height: 80,
+          builder: (ctx) => Icon(
+            Icons.sports_soccer, // Ícono predeterminado para polideportivos/campos de fútbol
+            size: 60,
+            color: Colors.green,
+          ),
+        );
+      }).toList());
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(
           'Map View',
-          style: TextStyle(color: Colors.deepOrange), // Cambia el color del texto a naranja
+          style: TextStyle(color: Colors.deepOrange),
         ),
-        centerTitle: true, // Centra el texto en la AppBar
-        backgroundColor: Colors.black, // Cambia el color de fondo del AppBar a negro
+        centerTitle: true,
+        backgroundColor: Colors.black,
         actions: [
           IconButton(
             icon: Icon(Icons.cloud),
@@ -100,7 +127,12 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               );
             },
-            color: Colors.deepOrange, // Cambia el color del icono de nube a deepOrange
+            color: Colors.deepOrange,
+          ),
+          IconButton(
+            icon: Icon(Icons.search),
+            onPressed: searchSportsFacilities, // Llama a la función de búsqueda
+            color: Colors.deepOrange,
           ),
         ],
       ),
@@ -111,11 +143,11 @@ class _MapScreenState extends State<MapScreen> {
   Widget content() {
     return FlutterMap(
       options: MapOptions(
-        center: LatLng(40.40886242536441, -3.5250663094863905), // Focus
+        center: LatLng(40.40886242536441, -3.5250663094863905),
         zoom: 15,
         interactiveFlags: InteractiveFlag.all,
         onTap: (point, latlng) {
-          addMarker(latlng); // Añadir marcador en la posición del puntero
+          addMarker(latlng);
         },
       ),
       children: [
