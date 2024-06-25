@@ -1,12 +1,11 @@
-// /lib/screens/map_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '/db/database_helper.dart';
 import 'weather_screen.dart';
 import 'overpass_service.dart';
-
-
 
 class MapScreen extends StatefulWidget {
   @override
@@ -15,6 +14,7 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   List<Marker> markers = [];
+  List<Marker> greenMarkers = [];
   List<LatLng> routeCoordinates = [];
   List<LatLng> markerCoordinates = [];
   final OverpassService overpassService = OverpassService();
@@ -23,7 +23,6 @@ class _MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
     loadMarkers();
-    loadRouteCoordinates();
   }
 
   Future<void> loadMarkers() async {
@@ -34,30 +33,52 @@ class _MapScreenState extends State<MapScreen> {
         point: LatLng(record['latitude'], record['longitude']),
         width: 80,
         height: 80,
-        builder: (ctx) => Icon(
-          Icons.location_pin,
-          size: 60,
-          color: Colors.red,
+        builder: (ctx) => GestureDetector(
+          onSecondaryTap: () => removeMarker(LatLng(record['latitude'], record['longitude'])),
+          child: Icon(
+            Icons.location_pin,
+            size: 60,
+            color: Colors.red,
+          ),
         ),
       );
     }).toList();
+
+    final prefs = await SharedPreferences.getInstance();
+    List<String>? savedMarkers = prefs.getStringList('markers');
+    if (savedMarkers != null) {
+      for (String marker in savedMarkers) {
+        Map<String, dynamic> coordMap = jsonDecode(marker);
+        LatLng point = LatLng(coordMap['lat'], coordMap['lng']);
+        loadedMarkers.add(
+          Marker(
+            point: point,
+            width: 80,
+            height: 80,
+            builder: (ctx) => GestureDetector(
+              onSecondaryTap: () => removeMarker(point),
+              child: Icon(
+                Icons.location_pin,
+                size: 60,
+                color: Colors.blue,
+              ),
+            ),
+          ),
+        );
+        markerCoordinates.add(point);
+      }
+    }
 
     setState(() {
       markers = loadedMarkers;
     });
   }
 
-  void loadRouteCoordinates() {
-    // Load list of coordinates in the route
-    routeCoordinates = [
-      LatLng(40.407621980242745, -3.517071770311644),
-      LatLng(40.409566291824795, -3.516234921159887),
-      LatLng(40.41031785940011, -3.5146041381974897),
-      LatLng(40.412784902661286, -3.513574170010713),
-      LatLng(40.414189933233956, -3.512866066882304),
-      LatLng(40.41686921259544, -3.511127995489052),
-      LatLng(40.41997312229808, -3.5090251437743816),
-    ];
+  void saveMarkers() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> markerList = markerCoordinates.map((coord) =>
+        jsonEncode({'lat': coord.latitude, 'lng': coord.longitude})).toList();
+    await prefs.setStringList('markers', markerList);
   }
 
   void addMarker(LatLng point) {
@@ -67,14 +88,67 @@ class _MapScreenState extends State<MapScreen> {
           point: point,
           width: 80,
           height: 80,
-          builder: (ctx) => Icon(
-            Icons.location_pin,
-            size: 60,
-            color: Colors.blue,
+          builder: (ctx) => GestureDetector(
+            onSecondaryTap: () => removeMarker(point),
+            child: Icon(
+              Icons.location_pin,
+              size: 60,
+              color: Colors.blue,
+            ),
           ),
         ),
       );
-      markerCoordinates.add(point); // Agregar coordenadas del marcador
+      markerCoordinates.add(point);
+      saveMarkers();
+    });
+  }
+
+  void createRoute() {
+    setState(() {
+      List<Marker> blueMarkers = markers.where((marker) {
+        if (marker.builder != null) {
+          Widget? markerWidget = marker.builder!(context);
+          return markerWidget is Icon && markerWidget.color == Colors.blue && markerWidget.icon == Icons.location_pin;
+        }
+        return false;
+      }).toList();
+
+      if (blueMarkers.length >= 2) {
+        routeCoordinates = calculateRouteCoordinates(blueMarkers);
+      } else {
+        routeCoordinates.clear();
+      }
+      print("Route coordinates updated: $routeCoordinates");
+    });
+  }
+
+  List<LatLng> calculateRouteCoordinates(List<Marker> blueMarkers) {
+    blueMarkers.sort((a, b) => a.point.latitude.compareTo(b.point.latitude));
+
+    List<LatLng> coords = [];
+    for (int i = 0; i < blueMarkers.length - 1; i++) {
+      LatLng start = blueMarkers[i].point;
+      LatLng end = blueMarkers[i + 1].point;
+      coords.add(start);
+      coords.add(end);
+    }
+    return coords;
+  }
+
+  void removeMarker(LatLng point) {
+    setState(() {
+      markers.removeWhere((marker) => marker.point == point);
+      markerCoordinates.removeWhere((coord) => coord == point);
+      saveMarkers();
+    });
+  }
+
+  void removeAllMarkers() {
+    setState(() {
+      markers.clear();
+      markerCoordinates.clear();
+      routeCoordinates.clear();
+      saveMarkers();
     });
   }
 
@@ -82,11 +156,11 @@ class _MapScreenState extends State<MapScreen> {
     final sportsFacilities = await overpassService.getSportsFacilities(
       40.40886242536441, // Centra la búsqueda en el centro del mapa
       -3.5250663094863905,
-      5000, // Radio en metros
+      50000, // Radio en metros
     );
 
     setState(() {
-      markers.addAll(sportsFacilities.map((place) {
+      greenMarkers.addAll(sportsFacilities.map((place) {
         return Marker(
           point: place.location,
           width: 80,
@@ -131,12 +205,32 @@ class _MapScreenState extends State<MapScreen> {
           ),
           IconButton(
             icon: Icon(Icons.search),
-            onPressed: searchSportsFacilities, // Llama a la función de búsqueda
+            onPressed: searchSportsFacilities,
             color: Colors.deepOrange,
           ),
         ],
       ),
       body: content(),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            onPressed: removeAllMarkers,
+            tooltip: 'Remove All Markers',
+            backgroundColor: Colors.deepOrange,
+            child: Icon(Icons.delete),
+          ),
+          SizedBox(height: 10),
+          FloatingActionButton(
+            onPressed: createRoute,
+            tooltip: 'Create Route',
+            backgroundColor: Colors.blue,
+            child: Icon(Icons.alt_route),
+          ),
+        ],
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -152,16 +246,16 @@ class _MapScreenState extends State<MapScreen> {
       ),
       children: [
         openStreetMapTileLayer(),
-        MarkerLayer(markers: markers), // Loaded markers
         PolylineLayer(
           polylines: [
             Polyline(
               points: routeCoordinates,
-              color: Colors.pink,
-              strokeWidth: 8.0,
+              color: Colors.red,
+              strokeWidth: 3.0,
             ),
           ],
         ),
+        MarkerLayer(markers: markers + greenMarkers),
       ],
     );
   }
@@ -173,3 +267,4 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 }
+
