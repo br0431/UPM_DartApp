@@ -14,7 +14,7 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   List<Marker> markers = [];
-  List<Marker> greenMarkers = [];
+  List<Marker> greenMarker = [];
   List<LatLng> routeCoordinates = [];
   List<LatLng> markerCoordinates = [];
   final OverpassService overpassService = OverpassService();
@@ -160,7 +160,7 @@ class _MapScreenState extends State<MapScreen> {
     );
 
     setState(() {
-      greenMarkers.addAll(sportsFacilities.map((place) {
+      greenMarker.addAll(sportsFacilities.map((place) {
         return Marker(
           point: place.location,
           width: 80,
@@ -255,7 +255,7 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ],
         ),
-        MarkerLayer(markers: markers + greenMarkers),
+        MarkerLayer(markers: markers + greenMarker),
       ],
     );
   }
