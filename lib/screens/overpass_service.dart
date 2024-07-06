@@ -4,9 +4,10 @@ import 'package:latlong2/latlong.dart';
 
 class OSMPlace {
   final String name;
+  final String type;
   final LatLng location;
 
-  OSMPlace({required this.name, required this.location});
+  OSMPlace({required this.name, required this.type, required this.location});
 }
 
 class OverpassService {
@@ -17,6 +18,9 @@ class OverpassService {
     (
       node["leisure"="sports_centre"](around:$radius,$lat,$lng);
       node["sport"="soccer"](around:$radius,$lat,$lng);
+      node["sport"="tennis"](around:$radius,$lat,$lng);
+      node["sport"="basketball"](around:$radius,$lat,$lng);
+      node["sport"="swimming"](around:$radius,$lat,$lng);
     );
     out body;
     ''';
@@ -28,9 +32,14 @@ class OverpassService {
       final elements = jsonResponse['elements'] as List;
 
       return elements.map((element) {
+        String type = element['tags']['sport'] ?? element['tags']['leisure'] ?? 'unknown';
+        String name = element['tags']['name'] ?? 'Unnamed';
+        LatLng location = LatLng(element['lat'], element['lon']);
+
         return OSMPlace(
-          name: element['tags']['name'] ?? 'Unnamed',
-          location: LatLng(element['lat'], element['lon']),
+          name: name,
+          type: type,
+          location: location,
         );
       }).toList();
     } else {

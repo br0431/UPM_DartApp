@@ -1,11 +1,21 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+import 'package:http/http.dart' as http;
+
 import '/db/database_helper.dart';
 import 'weather_screen.dart';
 import 'overpass_service.dart';
+
+class OSMPlace {
+  final String name;
+  final String type;
+  final LatLng location;
+
+  OSMPlace({required this.name, required this.type, required this.location});
+}
 
 class MapScreen extends StatefulWidget {
   @override
@@ -16,7 +26,7 @@ class _MapScreenState extends State<MapScreen> {
   List<Marker> markers = [];
   List<Marker> greenMarker = [];
   List<LatLng> routeCoordinates = [];
-  List<LatLng> markerCoordinates = [];
+  List<Map<String, dynamic>> markerData = [];
   final OverpassService overpassService = OverpassService();
 
   @override
@@ -33,13 +43,27 @@ class _MapScreenState extends State<MapScreen> {
         point: LatLng(record['latitude'], record['longitude']),
         width: 80,
         height: 80,
-        builder: (ctx) => GestureDetector(
-          onSecondaryTap: () => removeMarker(LatLng(record['latitude'], record['longitude'])),
-          child: Icon(
-            Icons.location_pin,
-            size: 60,
-            color: Colors.red,
-          ),
+        builder: (ctx) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            GestureDetector(
+              onSecondaryTap: () => removeMarker(LatLng(record['latitude'], record['longitude'])),
+              child: Icon(
+                Icons.location_pin,
+                size: 60,
+                color: Colors.red,
+              ),
+            ),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  record['name'] ?? '',
+                  style: TextStyle(color: Colors.black),
+                ),
+              ),
+            ),
+          ],
         ),
       );
     }).toList();
@@ -55,17 +79,31 @@ class _MapScreenState extends State<MapScreen> {
             point: point,
             width: 80,
             height: 80,
-            builder: (ctx) => GestureDetector(
-              onSecondaryTap: () => removeMarker(point),
-              child: Icon(
-                Icons.location_pin,
-                size: 60,
-                color: Colors.blue,
-              ),
+            builder: (ctx) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onSecondaryTap: () => removeMarker(point),
+                  child: Icon(
+                    _getIconForType(coordMap['type']),
+                    size: 60,
+                    color: _getColorForType(coordMap['type']),
+                  ),
+                ),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      coordMap['name'] ?? '',
+                      style: TextStyle(color: _getColorForType(coordMap['type'])),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         );
-        markerCoordinates.add(point);
+        markerData.add({'point': point, 'name': coordMap['name'], 'type': coordMap['type']});
       }
     }
 
@@ -76,103 +114,117 @@ class _MapScreenState extends State<MapScreen> {
 
   void saveMarkers() async {
     final prefs = await SharedPreferences.getInstance();
-    List<String> markerList = markerCoordinates.map((coord) =>
-        jsonEncode({'lat': coord.latitude, 'lng': coord.longitude})).toList();
+    List<String> markerList = markerData.map((data) =>
+        jsonEncode({'lat': data['point'].latitude, 'lng': data['point'].longitude, 'name': data['name'], 'type': data['type']})).toList();
     await prefs.setStringList('markers', markerList);
   }
 
-  void addMarker(LatLng point) {
+  void addMarker(LatLng point) async {
+    String? markerName = await _showMarkerNameDialog();
+
+    if (markerName == null || markerName.isEmpty) {
+      return;
+    }
+
     setState(() {
       markers.add(
         Marker(
           point: point,
           width: 80,
           height: 80,
-          builder: (ctx) => GestureDetector(
-            onSecondaryTap: () => removeMarker(point),
-            child: Icon(
-              Icons.location_pin,
-              size: 60,
-              color: Colors.blue,
-            ),
+          builder: (ctx) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GestureDetector(
+                onSecondaryTap: () => removeMarker(point),
+                child: Icon(
+                  Icons.location_pin,
+                  size: 60,
+                  color: Colors.greenAccent,
+                ),
+              ),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    markerName,
+                    style: TextStyle(color: Colors.blue),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       );
-      markerCoordinates.add(point);
+      markerData.add({'point': point, 'name': markerName, 'type': 'custom'});
       saveMarkers();
     });
   }
 
-  void createRoute() {
-    setState(() {
-      List<Marker> blueMarkers = markers.where((marker) {
-        if (marker.builder != null) {
-          Widget? markerWidget = marker.builder!(context);
-          return markerWidget is Icon && markerWidget.color == Colors.blue && markerWidget.icon == Icons.location_pin;
-        }
-        return false;
-      }).toList();
-
-      if (blueMarkers.length >= 2) {
-        routeCoordinates = calculateRouteCoordinates(blueMarkers);
-      } else {
-        routeCoordinates.clear();
-      }
-      print("Route coordinates updated: $routeCoordinates");
-    });
-  }
-
-  List<LatLng> calculateRouteCoordinates(List<Marker> blueMarkers) {
-    blueMarkers.sort((a, b) => a.point.latitude.compareTo(b.point.latitude));
-
-    List<LatLng> coords = [];
-    for (int i = 0; i < blueMarkers.length - 1; i++) {
-      LatLng start = blueMarkers[i].point;
-      LatLng end = blueMarkers[i + 1].point;
-      coords.add(start);
-      coords.add(end);
-    }
-    return coords;
-  }
-
-  void removeMarker(LatLng point) {
-    setState(() {
-      markers.removeWhere((marker) => marker.point == point);
-      markerCoordinates.removeWhere((coord) => coord == point);
-      saveMarkers();
-    });
-  }
-
-  void removeAllMarkers() {
-    setState(() {
-      markers.clear();
-      markerCoordinates.clear();
-      routeCoordinates.clear();
-      saveMarkers();
-    });
-  }
-
-  Future<void> searchSportsFacilities() async {
-    final sportsFacilities = await overpassService.getSportsFacilities(
-      40.40886242536441, // Centra la búsqueda en el centro del mapa
-      -3.5250663094863905,
-      50000, // Radio en metros
-    );
-
-    setState(() {
-      greenMarker.addAll(sportsFacilities.map((place) {
-        return Marker(
-          point: place.location,
-          width: 80,
-          height: 80,
-          builder: (ctx) => Icon(
-            Icons.sports_soccer, // Ícono predeterminado para polideportivos/campos de fútbol
-            size: 60,
-            color: Colors.green,
+  Future<String?> _showMarkerNameDialog() async {
+    TextEditingController _nameController = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Enter Marker Name'),
+          content: TextField(
+            controller: _nameController,
+            decoration: InputDecoration(hintText: 'Marker Name'),
           ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop(_nameController.text);
+              },
+            ),
+          ],
         );
-      }).toList());
-    });
+      },
+    );
+  }
+
+  IconData _getIconForType(String type) {
+    switch (type) {
+      case 'soccer':
+        return Icons.sports_soccer;
+      case 'tennis':
+        return Icons.sports_tennis;
+      case 'basketball':
+        return Icons.sports_basketball;
+      case 'swimming':
+        return Icons.pool;
+      case 'sports_centre':
+        return Icons.accessibility_new;
+      default:
+        return Icons.location_on;
+    }
+  }
+
+  Color _getColorForType(String type) {
+    switch (type) {
+      case 'soccer':
+        return Colors.green;
+      case 'tennis':
+        return Colors.orange;
+      case 'basketball':
+        return Colors.blue;
+      case 'swimming':
+        return Colors.blueAccent;
+      case 'sports_centre':
+        return Colors.red;
+      case 'custom':
+        return Colors.blue; // Color for custom markers
+      default:
+        return Colors.indigo;
+    }
   }
 
   @override
@@ -189,7 +241,7 @@ class _MapScreenState extends State<MapScreen> {
           IconButton(
             icon: Icon(Icons.cloud),
             onPressed: () {
-              // Navegar a WeatherScreen
+              // Navigate to WeatherScreen
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -266,5 +318,90 @@ class _MapScreenState extends State<MapScreen> {
       userAgentPackageName: 'dev.fleaflet.flutter_map.example',
     );
   }
-}
 
+  void createRoute() {
+    setState(() {
+      List<Marker> blueMarkers = markers.where((marker) {
+        if (marker.builder != null) {
+          Widget? markerWidget = marker.builder!(context);
+          return markerWidget is Icon && markerWidget.color == Colors.greenAccent && markerWidget.icon == Icons.location_pin;
+        }
+        return false;
+      }).toList();
+
+      if (blueMarkers.length >= 2) {
+        routeCoordinates = calculateRouteCoordinates(blueMarkers);
+      } else {
+        routeCoordinates.clear();
+      }
+      print("Route coordinates updated: $routeCoordinates");
+    });
+  }
+
+  List<LatLng> calculateRouteCoordinates(List<Marker> blueMarkers) {
+    blueMarkers.sort((a, b) => a.point.latitude.compareTo(b.point.latitude));
+
+    List<LatLng> coords = [];
+    for (int i = 0; i < blueMarkers.length - 1; i++) {
+      LatLng start = blueMarkers[i].point;
+      LatLng end = blueMarkers[i + 1].point;
+      coords.add(start);
+      coords.add(end);
+    }
+    return coords;
+  }
+
+  void removeMarker(LatLng point) {
+    setState(() {
+      markers.removeWhere((marker) => marker.point == point);
+      markerData.removeWhere((data) => data['point'] == point);
+      saveMarkers();
+    });
+  }
+
+  void removeAllMarkers() {
+    setState(() {
+      markers.clear();
+      markerData.clear();
+      routeCoordinates.clear();
+      saveMarkers();
+    });
+  }
+
+  Future<void> searchSportsFacilities() async {
+    final sportsFacilities = await overpassService.getSportsFacilities(
+      40.40886242536441, // Centra la búsqueda en el centro del mapa
+      -3.5250663094863905,
+      50000, // Radio en metros
+    );
+
+    setState(() {
+      greenMarker.addAll(sportsFacilities.map((place) {
+        return Marker(
+          point: place.location,
+          width: 80,
+          height: 80,
+          builder: (ctx) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                _getIconForType(place.type),
+                size: 60,
+                color: _getColorForType(place.type),
+              ),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    place.name,
+                    style: TextStyle(color: _getColorForType(place.type)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList());
+    });
+  }
+}
