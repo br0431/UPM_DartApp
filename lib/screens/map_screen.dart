@@ -321,14 +321,23 @@ class _MapScreenState extends State<MapScreen> {
 
   void createRoute() {
     setState(() {
+      // Filtramos los marcadores azules
       List<Marker> blueMarkers = markers.where((marker) {
         if (marker.builder != null) {
           Widget? markerWidget = marker.builder!(context);
-          return markerWidget is Icon && markerWidget.color == Colors.greenAccent && markerWidget.icon == Icons.location_pin;
+          if (markerWidget is Column) {
+            for (var child in markerWidget.children) {
+              if (child is GestureDetector && child.child is Icon) {
+                Icon icon = child.child as Icon;
+                return icon.color == Colors.greenAccent;
+              }
+            }
+          }
         }
         return false;
       }).toList();
 
+      // Actualizamos la ruta solo si hay al menos dos marcadores azules
       if (blueMarkers.length >= 2) {
         routeCoordinates = calculateRouteCoordinates(blueMarkers);
       } else {
