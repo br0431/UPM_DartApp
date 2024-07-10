@@ -1,21 +1,15 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 import '/db/database_helper.dart';
+
+import 'favoriteLocationScreen.dart';
 import 'weather_screen.dart';
 import 'overpass_service.dart';
 
-class OSMPlace {
-  final String name;
-  final String type;
-  final LatLng location;
-
-  OSMPlace({required this.name, required this.type, required this.location});
-}
 
 class MapScreen extends StatefulWidget {
   @override
@@ -24,7 +18,7 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   List<Marker> markers = [];
-  List<Marker> greenMarker = [];
+  List<Marker> greenMarkers = [];
   List<LatLng> routeCoordinates = [];
   List<Map<String, dynamic>> markerData = [];
   final OverpassService overpassService = OverpassService();
@@ -143,15 +137,6 @@ class _MapScreenState extends State<MapScreen> {
                   color: Colors.greenAccent,
                 ),
               ),
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    markerName,
-                    style: TextStyle(color: Colors.blue),
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -257,9 +242,13 @@ class _MapScreenState extends State<MapScreen> {
           ),
           IconButton(
             icon: Icon(Icons.search),
-            onPressed: searchSportsFacilities,
+            onPressed: () async {
+              List<OSMPlace> facilities= await showSportsFacilitiesOnMap();
+
+            },
             color: Colors.deepOrange,
           ),
+
         ],
       ),
       body: content(),
@@ -279,6 +268,16 @@ class _MapScreenState extends State<MapScreen> {
             tooltip: 'Create Route',
             backgroundColor: Colors.blue,
             child: Icon(Icons.alt_route),
+          ),
+          SizedBox(height: 10),
+          FloatingActionButton(
+            onPressed: () async {
+              List<OSMPlace> facilities = await getSportsFacilitiesList();
+              showSportsFacilitiesScreen(facilities);
+            },
+            tooltip: 'Favorite Locations',
+            backgroundColor: Colors.greenAccent,
+            child: Icon(Icons.star),
           ),
         ],
       ),
@@ -307,7 +306,7 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ],
         ),
-        MarkerLayer(markers: markers + greenMarker),
+        MarkerLayer(markers: markers + greenMarkers),
       ],
     );
   }
@@ -321,7 +320,7 @@ class _MapScreenState extends State<MapScreen> {
 
   void createRoute() {
     setState(() {
-      // Filtramos los marcadores azules
+      // Filtramos los marcadores verdes
       List<Marker> blueMarkers = markers.where((marker) {
         if (marker.builder != null) {
           Widget? markerWidget = marker.builder!(context);
@@ -337,80 +336,287 @@ class _MapScreenState extends State<MapScreen> {
         return false;
       }).toList();
 
-      // Actualizamos la ruta solo si hay al menos dos marcadores azules
+      // Actualizamos la ruta solo si hay al menos dos marcadores verdes
       if (blueMarkers.length >= 2) {
         routeCoordinates = calculateRouteCoordinates(blueMarkers);
+        print("Route coordinates updated: $routeCoordinates");
       } else {
         routeCoordinates.clear();
+        _showMessageDialog(
+            'Se necesitan al menos dos marcadores verdes para crear una ruta.');
       }
-      print("Route coordinates updated: $routeCoordinates");
     });
   }
 
   List<LatLng> calculateRouteCoordinates(List<Marker> blueMarkers) {
-    blueMarkers.sort((a, b) => a.point.latitude.compareTo(b.point.latitude));
-
-    List<LatLng> coords = [];
-    for (int i = 0; i < blueMarkers.length - 1; i++) {
-      LatLng start = blueMarkers[i].point;
-      LatLng end = blueMarkers[i + 1].point;
-      coords.add(start);
-      coords.add(end);
+    List<LatLng> coordinates = [];
+    for (var marker in blueMarkers) {
+      coordinates.add(marker.point);
     }
-    return coords;
+    return coordinates;
   }
-
-  void removeMarker(LatLng point) {
-    setState(() {
-      markers.removeWhere((marker) => marker.point == point);
-      markerData.removeWhere((data) => data['point'] == point);
-      saveMarkers();
-    });
-  }
-
-  void removeAllMarkers() {
-    setState(() {
-      markers.clear();
-      markerData.clear();
-      routeCoordinates.clear();
-      saveMarkers();
-    });
-  }
-
-  Future<void> searchSportsFacilities() async {
+  Future<List<OSMPlace>> showSportsFacilitiesOnMap() async {
     final sportsFacilities = await overpassService.getSportsFacilities(
       40.40886242536441, // Centra la búsqueda en el centro del mapa
       -3.5250663094863905,
       50000, // Radio en metros
     );
 
+    // Caracter específico a filtrar
+    String specificCharacter = 'Ã'; // Por ejemplo, el carácter '@'
+
+    // Filtra los lugares que no tengan nombre "unnamed" y no contengan el carácter específico
+    List<OSMPlace> filteredFacilities = sportsFacilities.where((facility) {
+      return facility.name != null &&
+          facility.name != "Unnamed" &&
+          !facility.name!.contains(specificCharacter);
+    }).toList();
+
+    // Limpiar marcadores existentes
     setState(() {
-      greenMarker.addAll(sportsFacilities.map((place) {
-        return Marker(
-          point: place.location,
-          width: 80,
-          height: 80,
-          builder: (ctx) => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                _getIconForType(place.type),
+      markers.clear();
+      routeCoordinates.clear();
+    });
+
+    // Mostrar marcadores para las instalaciones deportivas encontradas
+    List<Marker> facilityMarkers = filteredFacilities.map((facility) {
+      return Marker(
+        point: facility.location,
+        width: 80,
+        height: 80,
+        builder: (ctx) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            GestureDetector(
+              onSecondaryTap: () {
+                // Mostrar opción para añadir a favoritos
+
+              },
+              child: Icon(
+                _getIconForType(facility.type),
                 size: 60,
-                color: _getColorForType(place.type),
+                color: _getColorForType(facility.type),
               ),
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    place.name,
-                    style: TextStyle(color: _getColorForType(place.type)),
-                  ),
+            ),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  facility.name ?? '',
+                  style: TextStyle(color: _getColorForType(facility.type)),
                 ),
               ),
-            ],
-          ),
-        );
-      }).toList());
+            ),
+          ],
+        ),
+      );
+    }).toList();
+
+    setState(() {
+      markers.addAll(facilityMarkers);
     });
+
+    return filteredFacilities;
+  }
+
+  Future<List<OSMPlace>> getSportsFacilitiesList() async {
+    final sportsFacilities = await overpassService.getSportsFacilities(
+      40.40886242536441, // Centra la búsqueda en el centro del mapa
+      -3.5250663094863905,
+      50000, // Radio en metros
+    );
+
+    // Caracter específico a filtrar
+    String specificCharacter = 'Ã'; // Por ejemplo, el carácter '@'
+
+    // Filtra los lugares que no tengan nombre "unnamed" y no contengan el carácter específico
+    List<OSMPlace> filteredFacilities = sportsFacilities.where((facility) {
+      return facility.name != null &&
+          facility.name != "Unnamed" &&
+          !facility.name!.contains(specificCharacter);
+    }).toList();
+
+    return filteredFacilities;
+  }
+
+  void showSportsFacilitiesScreen(List<OSMPlace> facilities) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SportsFacilitiesScreen(
+          facilities: facilities,
+          onFavoriteChanged: (OSMPlace facility, bool isFavorite) {
+            // Actualizar el estado visual de la instalación deportiva marcada como favorita
+            setState(() {
+              int index = markers.indexWhere((marker) => marker.point == facility.location);
+              if (index != -1) {
+                Marker marker = markers[index];
+                markers[index] = Marker(
+                  point: marker.point,
+                  width: marker.width,
+                  height: marker.height,
+                  builder: (ctx) => Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      GestureDetector(
+                        onSecondaryTap: () {
+                          // Mostrar opción para añadir a favoritos
+                          addFavoriteLocation(facility);
+                        },
+                        child: Icon(
+                          _getIconForType(facility.type),
+                          size: 60,
+                          color: _getColorForType(facility.type),
+                        ),
+                      ),
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            facility.name ?? '',
+                            style: TextStyle(color: _getColorForType(facility.type)),
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: isFavorite ? Colors.red : Colors.grey,
+                      ),
+                    ],
+                  ),
+                );
+              }
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  void addFavoriteLocation(OSMPlace facility) {
+    // Guardar la ubicación favorita
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FavoriteLocationScreen(
+          facility: facility,
+        ),
+      ),
+    );
+  }
+
+
+
+
+
+
+
+
+  void removeAllMarkers() {
+    setState(() {
+      markers.clear();
+      routeCoordinates.clear();
+      saveMarkers();
+    });
+  }
+
+  void removeMarker(LatLng point) {
+    setState(() {
+      markers.removeWhere((marker) => marker.point == point);
+      greenMarkers.removeWhere((marker) => marker.point == point);
+      routeCoordinates.remove(point);
+      markerData.removeWhere((data) => data['point'] == point);
+      saveMarkers();
+    });
+  }
+
+  void _showMessageDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Message'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+
+class SportsFacilitiesScreen extends StatefulWidget {
+  final List<OSMPlace> facilities;
+  final Function(OSMPlace, bool) onFavoriteChanged;
+
+  SportsFacilitiesScreen({required this.facilities, required this.onFavoriteChanged});
+
+  @override
+  _SportsFacilitiesScreenState createState() => _SportsFacilitiesScreenState();
+}
+
+class _SportsFacilitiesScreenState extends State<SportsFacilitiesScreen> {
+  List<bool> isFavoriteList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    isFavoriteList = List.generate(widget.facilities.length, (index) => false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Instalaciones deportivas',
+          style: TextStyle(color: Colors.deepOrange),
+        ),
+        backgroundColor: Colors.black,
+      ),
+      body: ListView.builder(
+        itemCount: widget.facilities.length,
+        itemBuilder: (context, index) {
+          OSMPlace facility = widget.facilities[index];
+          bool isFavorite = isFavoriteList[index];
+
+          return ListTile(
+            title: Text(
+              facility.name ?? 'Desconocido',
+              style: TextStyle(color: Colors.deepOrange),
+            ),
+            subtitle: Text('${facility.type}'),
+            trailing: GestureDetector(
+              onTap: () {
+                setState(() {
+                  isFavorite = !isFavorite;
+                  isFavoriteList[index] = isFavorite;
+                  widget.onFavoriteChanged(facility, isFavorite);
+                  if (isFavorite) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FavoriteLocationScreen(facility: facility),
+                      ),
+                    );
+                  }
+                });
+              },
+              child: Icon(
+                isFavorite ? Icons.favorite : Icons.favorite_border,
+                color: isFavorite ? Colors.red : Colors.grey,
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 }

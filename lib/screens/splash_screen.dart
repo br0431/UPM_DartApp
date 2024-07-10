@@ -7,6 +7,7 @@ import 'dart:io';
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:path_provider/path_provider.dart';
+import 'third_screen.dart'; // Importa ThirdScreen aquí
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -21,8 +22,8 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.black, // Fondo oscuro
-        centerTitle: true, // Centrar el título
+        backgroundColor: Colors.black,
+        centerTitle: true,
         title: Text('Home', style: TextStyle(color: Colors.deepOrange)),
         actions: <Widget>[
           IconButton(
@@ -34,13 +35,37 @@ class _SplashScreenState extends State<SplashScreen> {
               );
             },
           ),
+          IconButton(
+            icon: Icon(Icons.notifications, color: Colors.deepOrange), // Icono de campana
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ThirdScreen()),
+              );
+            },
+          ),
         ],
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Welcome to the Home Screen!'),
+            Container(
+              width: double.infinity,
+              alignment: Alignment.center,
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'Welcome to the Home Screen!',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            SizedBox(height: 40), // Espacio entre el texto y el siguiente elemento
+            Text(
+              'Activar ubicación',
+              style: TextStyle(color: Colors.deepOrange, fontSize: 18),
+            ),
+            SizedBox(height: 8),
             Switch(
               value: _positionStreamSubscription != null,
               onChanged: (value) {
@@ -61,22 +86,22 @@ class _SplashScreenState extends State<SplashScreen> {
 
   void startTracking() async {
     final locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.high, // Adjust the accuracy as needed
-      distanceFilter: 10, // Distance in meters before an update is triggered
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 10,
     );
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      return Future.error('Location services are disabled.');
+      return Future.error('Los servicios de ubicación están desactivados.');
     }
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        return Future.error('Location permissions are denied');
+        return Future.error('Se denegaron los permisos de ubicación');
       }
     }
     if (permission == LocationPermission.deniedForever) {
-      return Future.error('Location permissions are permanently denied');
+      return Future.error('Los permisos de ubicación se denegaron permanentemente');
     }
     _positionStreamSubscription =
         Geolocator.getPositionStream(locationSettings: locationSettings).listen(
@@ -90,7 +115,6 @@ class _SplashScreenState extends State<SplashScreen> {
         db.insertCoordinate(position);
       },
     );
-
   }
 
   void stopTracking() {
@@ -103,7 +127,8 @@ class _SplashScreenState extends State<SplashScreen> {
     final file = File('${directory.path}/gps_coordinates.csv');
     String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
     await file.writeAsString(
-        '${timestamp};${position.latitude};${position.longitude}\n',
-        mode: FileMode.append);
+      '${timestamp};${position.latitude};${position.longitude}\n',
+      mode: FileMode.append,
+    );
   }
 }

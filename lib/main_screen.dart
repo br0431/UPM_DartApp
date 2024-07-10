@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:rv_ad_mad/screens/map_screen.dart';
-import 'firebase_options.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:rv_ad_mad/screens/tablondeanuncios.dart';
+
 import 'screens/splash_screen.dart';
 import 'screens/second_screen.dart';
 import 'screens/third_screen.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'app.dart';
 import 'screens/login_screen.dart';
+import 'screens/map_screen.dart';
+import 'screens/favoritosScreen.dart'; // Importar la pantalla de favoritos
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +19,6 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
             }
             return LoginScreen(); // Usuario no está logueado
           }
-          return CircularProgressIndicator(); // Esperando conexión
+          return const CircularProgressIndicator(); // Esperando conexión
         },
       ),
       theme: ThemeData.dark().copyWith(
@@ -49,12 +49,13 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 2;
   final List<Widget> _screens = [
-    SplashScreen(),
     SecondScreen(),
     MapScreen(),
-    ThirdScreen(),
+    SplashScreen(),
+    TablonDeAnunciosScreen(anuncios: [],),
+    FavoritosScreen(), // Agregar la pantalla de favoritos aquí
   ];
 
   void _onItemTapped(int index) {
@@ -72,10 +73,6 @@ class _MainScreenState extends State<MainScreen> {
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.search),
             label: 'Search',
           ),
@@ -84,8 +81,16 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Map',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: 'Notifications',
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.access_time_filled_outlined),
+            label: 'Advertisments',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.star), // Cambiar de Icons.favorite a Icons.star
+            label: 'Favorites',
           ),
         ],
         currentIndex: _selectedIndex,

@@ -12,13 +12,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Map<String, TextEditingController> controllers = {};
 
   Future<Map<String, dynamic>> _fetchAllPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    final keys = prefs.getKeys();
     final Map<String, dynamic> prefsMap = {};
-    for (String key in keys) {
-      prefsMap[key] = prefs.get(key);
-      controllers[key] = TextEditingController(text: prefs.get(key).toString());
-    }
+
     return prefsMap;
   }
 
@@ -50,19 +45,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             }
             return Stack(
               children: [
-                ListView(
-                  children: snapshot.data!.entries.map((entry) {
+                ListView.builder(
+                  itemCount: snapshot.data!.length,
+                  itemBuilder: (context, index) {
+                    String key = snapshot.data!.keys.toList()[index];
                     return ListTile(
-                      title: Text("${entry.key}"),
+                      title: Text("$key"),
                       subtitle: TextField(
-                        controller: controllers[entry.key],
-                        decoration: InputDecoration(hintText: "Enter ${entry.key}"),
+                        controller: controllers[key],
+                        decoration: InputDecoration(hintText: "Enter $key"),
                         onSubmitted: (value) {
-                          _updatePreference(entry.key, value);
+                          _updatePreference(key, value);
                         },
                       ),
                     );
-                  }).toList(),
+                  },
                 ),
                 Center(
                   child: Column(
