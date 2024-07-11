@@ -10,6 +10,9 @@ Releases: https://github.com/br0431/FLUTTER_RV_AD_MAD/releases
 
 Workspace: https://upm365.sharepoint.com/sites/MAD_RodrigoValiente/SitePages/TRACKING.aspx
 
+PDF with all the detailed info of the proyect: [Entrega_Flutter_RV_AD .pdf](https://github.com/user-attachments/files/16182739/Entrega_Flutter_RV_AD.pdf)
+
+
 ## APP icon
 
 ![image](https://github.com/br0431/FLUTTER_RV_AD_MAD/assets/158819227/70015f33-b0b0-4568-b301-58fc0b8b125d)
