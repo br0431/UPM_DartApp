@@ -31,8 +31,13 @@ for mapping functionality.
 Overall, SportNav aims to streamline the process of discovering and utilizing sports
 facilities, enhancing user experience through comprehensive location-based services
 and community-driven event organization.
+
 ## Screenshots and navigation
+
 images contained in pdf document uploaded to the task in moodle 
+![WhatsApp Image 2024-07-11 at 17 02 07 (1)](https://github.com/br0431/FLUTTER_RV_AD_MAD/assets/158819227/8e3b044b-ab32-428b-b580-d7aefc7dbe5d)
+![WhatsApp Image 2024-07-11 at 17 02 07 (1)](https://github.com/br0431/FLUTTER_RV_AD_MAD/assets/158819227/d8ae69c1-ccc9-40d7-9883-b4d1066db886)
+
 
 ## Demo video
 Video:
