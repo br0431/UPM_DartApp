@@ -1,14 +1,17 @@
 # flutter_RV_AD
 
 ## Workspace
-Github:
--Repository: https://github.com/br0431/FLUTTER_RV_AD_MAD
 
--Releases: https://github.com/br0431/FLUTTER_RV_AD_MAD/releases
+Github:
+
+Repository: https://github.com/br0431/FLUTTER_RV_AD_MAD
+
+Releases: https://github.com/br0431/FLUTTER_RV_AD_MAD/releases
 
 Workspace: https://upm365.sharepoint.com/sites/MAD_RodrigoValiente/SitePages/TRACKING.aspx
 
 ## Description
+
 SportNav is a mobile application designed for finding and managing sports centers,
 as well as organizing events related to these centers. These centers can include a
 variety of facilities such as sports complexes, soccer fields, basketball courts, tennis
@@ -35,6 +38,7 @@ and community-driven event organization.
 ## Screenshots and navigation
 
 individual images contained in pdf document uploaded to the task in moodle.
+
 ![image](https://github.com/br0431/FLUTTER_RV_AD_MAD/assets/158819227/3044d918-90e0-4c4b-b6b2-3d040b18112c)
 ![image](https://github.com/br0431/FLUTTER_RV_AD_MAD/assets/158819227/b926be1c-16f9-464f-8b76-049b2c7fadbc)
 ![image](https://github.com/br0431/FLUTTER_RV_AD_MAD/assets/158819227/ac677a83-1cbe-454f-b1f8-796f3cc1d9b3)
@@ -52,6 +56,7 @@ individual images contained in pdf document uploaded to the task in moodle.
 
 ## Demo video
 Video:
+
 In the following link, you can see a demonstration of the app working and its
 features that were previously described.
 
