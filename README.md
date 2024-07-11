@@ -34,9 +34,20 @@ and community-driven event organization.
 
 ## Screenshots and navigation
 
-images contained in pdf document uploaded to the task in moodle 
-![WhatsApp Image 2024-07-11 at 17 02 07 (1)](https://github.com/br0431/FLUTTER_RV_AD_MAD/assets/158819227/8e3b044b-ab32-428b-b580-d7aefc7dbe5d)
-![WhatsApp Image 2024-07-11 at 17 02 07 (1)](https://github.com/br0431/FLUTTER_RV_AD_MAD/assets/158819227/d8ae69c1-ccc9-40d7-9883-b4d1066db886)
+individual images contained in pdf document uploaded to the task in moodle.
+![image](https://github.com/br0431/FLUTTER_RV_AD_MAD/assets/158819227/3044d918-90e0-4c4b-b6b2-3d040b18112c)
+![image](https://github.com/br0431/FLUTTER_RV_AD_MAD/assets/158819227/b926be1c-16f9-464f-8b76-049b2c7fadbc)
+![image](https://github.com/br0431/FLUTTER_RV_AD_MAD/assets/158819227/ac677a83-1cbe-454f-b1f8-796f3cc1d9b3)
+![image](https://github.com/br0431/FLUTTER_RV_AD_MAD/assets/158819227/b544f5ae-6ec7-42cb-83e9-0c766fd447e0)
+![image](https://github.com/br0431/FLUTTER_RV_AD_MAD/assets/158819227/301ff171-4a58-4b3f-8641-666a1badadd6)
+![image](https://github.com/br0431/FLUTTER_RV_AD_MAD/assets/158819227/1d80b5e1-f371-4c78-b55a-5a4b579497a1)
+![image](https://github.com/br0431/FLUTTER_RV_AD_MAD/assets/158819227/490353f2-5ce1-448d-a918-c025b1cae7b8)
+![image](https://github.com/br0431/FLUTTER_RV_AD_MAD/assets/158819227/c472d18c-2bbb-4130-9011-2c5b75cf76e9)
+![image](https://github.com/br0431/FLUTTER_RV_AD_MAD/assets/158819227/55e4c773-ff30-4bd5-8252-51185362c9db)
+![image](https://github.com/br0431/FLUTTER_RV_AD_MAD/assets/158819227/7366472e-780f-4ca3-8724-6e154581a635)
+
+
+
 
 
 ## Demo video
