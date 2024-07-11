@@ -46,6 +46,7 @@ WxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXcifX0%3D
 Sports Center Finder: Locate various sports facilities such as sports complexes,
 soccer fields, basketball courts, tennis and padel courts, gyms, swimming clubs, and
 climbing centers.
+
 Event Organization: Create and manage events related to the sports centers.
 User Location and Coordinate Management: Track and manage user coordinates
 and locations.
