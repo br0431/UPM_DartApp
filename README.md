@@ -10,6 +10,10 @@ Releases: https://github.com/br0431/FLUTTER_RV_AD_MAD/releases
 
 Workspace: https://upm365.sharepoint.com/sites/MAD_RodrigoValiente/SitePages/TRACKING.aspx
 
+## APP icon
+
+![image](https://github.com/br0431/FLUTTER_RV_AD_MAD/assets/158819227/81bb1644-676d-4cb3-9cb1-7c321df2ad69)
+
 ## Description
 
 SportNav is a mobile application designed for finding and managing sports centers,
